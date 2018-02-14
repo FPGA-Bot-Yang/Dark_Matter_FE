@@ -1,0 +1,21 @@
+170105:
+	TX Transceiver data rate of 2.5 Gbps
+	TX controller use the clock output from transceiver IP
+
+170111:
+	Seprate version for different FE boards (with different port connections)
+
+
+170112:
+	Revision for the newly received FE board, currently use TX port 3
+
+170113:
+	Use 2 TX ports on the FE board to send 2 sets of data simutaniously to BE
+	(As the other board is not working, using this method to test multiple channle receiving on BE)
+
+170114:
+	The schematic of Serdes board on Board 3 is different from Board 1. The TX port gives nothing. Need the correct board schematic.
+
+170329:
+	The new board should be working by now, use F1 design just changing TX ports
+	All 4 channels sending at the same time and works!!!!!!!!!!!!!!!
