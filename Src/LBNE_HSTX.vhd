@@ -106,6 +106,7 @@ SIGNAL	ADC_FIFO_EMPTY		: STD_LOGIC;
 
 -----Ethan------
 SIGNAL tx_ctrlenable_counter : STD_LOGIC_VECTOR(19 DOWNTO 0);
+SIGNAL idle_counter : STD_LOGIC_VECTOR(11 DOWNTO 0);
 
 
 ----------------
@@ -199,12 +200,14 @@ ALTGX_TX_inst	: ALTGX_TX
 		if (rst = '1') then
 			tx_ctrlenable <= b"01";						-- Signifying this is control word
 			tx_ctrlenable_counter <= x"00000";		-- Counter to record how many sync signals has been sent
+			idle_counter <= x"000";						-- Counter to generate the idle cycle when one set of data finished sending
 			TX_DATA1	<= x"36BC";							-- Sync signal
 			state <= SYNC;									-- State machine always starts from SYNC stage after reset
 		elsif tx_clkout(0)'event and tx_clkout(0) = '1' then
 			case state is
 				when SYNC =>
 					tx_ctrlenable_counter <= tx_ctrlenable_counter + 1;
+					idle_counter <= x"000";
 					tx_ctrlenable <= b"01";
 					TX_DATA1 <= x"36BC";
 					if (tx_ctrlenable_counter <= x"AFFFF") then
@@ -215,12 +218,14 @@ ALTGX_TX_inst	: ALTGX_TX
 					
 				when HEADER =>
 					tx_ctrlenable_counter <= x"00001";
+					idle_counter <= x"000";
 					tx_ctrlenable <= b"00";
 					TX_DATA1 <= x"DEAD";
 					state <= PAYLOAD;
 					
 				when PAYLOAD =>
 					tx_ctrlenable_counter <= tx_ctrlenable_counter + b"1";
+					idle_counter <= x"000";
 					tx_ctrlenable <= b"00";
 					TX_DATA1 <= tx_ctrlenable_counter(15 downto 0);
 					if (tx_ctrlenable_counter < 126) then
@@ -231,18 +236,25 @@ ALTGX_TX_inst	: ALTGX_TX
 					
 				when TAIL =>
 					tx_ctrlenable_counter <= x"00000";
+					idle_counter <= x"000";
 					tx_ctrlenable <= b"00";
 					TX_DATA1 <= x"BEEF";
 					state <= IDLE;
 					
 				when IDLE =>
 					tx_ctrlenable_counter <= x"00000";
+					idle_counter <= idle_counter + 1;
 					tx_ctrlenable <= b"00";
 					TX_DATA1 <= x"D11D";
-					state <= IDLE;
+					if (idle_counter < 500) then
+						state <= IDLE;
+					else
+						state <= HEADER;
+					end if;
 					
 				when others =>
 					tx_ctrlenable_counter <= x"00000";
+					idle_counter <= x"000";
 					tx_ctrlenable <= b"00";
 					TX_DATA1 <= x"D11D";
 					state <= IDLE;
